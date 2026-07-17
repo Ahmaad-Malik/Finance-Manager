@@ -1,4 +1,4 @@
-const Transaction = require('../models/Transaction');
+const Transaction = require('../models/transaction');
 
 // @route   POST /api/transactions
 // @access  Private

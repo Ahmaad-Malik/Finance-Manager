@@ -1,5 +1,5 @@
-const Budget = require('../models/Budget');
-const Transaction = require('../models/Transaction');
+const Budget = require('../models/budget');
+const Transaction = require('../models/transaction');
 
 // @route   POST /api/budgets
 // @access  Private

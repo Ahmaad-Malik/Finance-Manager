@@ -1,4 +1,4 @@
-const SavingsGoal = require('../models/SavingsGoal');
+const SavingsGoal = require('../models/savinggoal');
 
 // @route   POST /api/goals
 // @access  Private

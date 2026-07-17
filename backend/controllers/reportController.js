@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const Transaction = require('../models/Transaction');
+const Transaction = require('../models/transaction');
 
 // @route   GET /api/reports/monthly?month=7&year=2026
 // @access  Private
