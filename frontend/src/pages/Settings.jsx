@@ -1,10 +1,13 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import { ArrowLeft, User, KeyRound } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { updatePassword as updatePasswordApi } from '../api/authApi';
 
 export default function Settings() {
   const { user, updateProfile } = useAuth();
+  const navigate = useNavigate();
 
   // --- Profile (name) form ---
   const [name, setName] = useState(user?.name || '');
@@ -81,11 +84,23 @@ export default function Settings() {
 
   return (
     <div className="page">
+      <div className="page-header-row">
+        <button
+          type="button"
+          className="btn-back"
+          onClick={() => navigate(-1)}
+          aria-label="Go back"
+        >
+          <ArrowLeft size={18} strokeWidth={2.2} />
+          <span>Back</span>
+        </button>
+      </div>
+
       <h1>Settings</h1>
 
       <div className="section settings-section">
         <div className="section-header">
-          <h2>Profile</h2>
+          <h2><User size={17} strokeWidth={2.2} className="section-header-icon" /> Profile</h2>
         </div>
 
         <form className="settings-form" onSubmit={handleProfileSubmit}>
@@ -118,7 +133,7 @@ export default function Settings() {
 
       <div className="section settings-section">
         <div className="section-header">
-          <h2>Change password</h2>
+          <h2><KeyRound size={17} strokeWidth={2.2} className="section-header-icon" /> Change password</h2>
         </div>
 
         <form className="settings-form" onSubmit={handlePasswordSubmit}>

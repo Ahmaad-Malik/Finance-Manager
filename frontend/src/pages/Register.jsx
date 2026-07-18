@@ -47,8 +47,19 @@ export default function Register() {
 
   return (
     <div className="auth-page">
+      <div className="auth-corner-brand">
+        <img src="/logo-icon.png" alt="" className="auth-corner-logo" />
+        <span>CashFin</span>
+      </div>
+
       <form className="auth-form" onSubmit={handleSubmit}>
-        <h1>Create an account</h1>
+        <div className="auth-form-brand">
+          <img src="/logo-icon.png" alt="CashFin" className="auth-form-logo" />
+          <h1 className="auth-form-title">CashFin</h1>
+          <p className="auth-form-tagline">Track &middot; Plan &middot; Save</p>
+        </div>
+
+        <h2 className="auth-form-heading">Create an account</h2>
 
         {error && <div className="form-error">{error}</div>}
 
