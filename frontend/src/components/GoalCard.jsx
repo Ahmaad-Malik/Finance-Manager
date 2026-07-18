@@ -45,7 +45,7 @@ export default function GoalCard({ goal, onContribute, onEdit, onDelete }) {
         </div>
       </div>
 
-      <ProgressBar percent={goal.progressPercent} />
+      <ProgressBar percent={goal.progressPercent} positive />
 
       <div className="budget-card-figures">
         <span>

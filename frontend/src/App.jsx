@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { AuthProvider } from './context/AuthContext';
+import { ThemeProvider } from './context/ThemeContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import Navbar from './components/Navbar';
 import ErrorBoundary from './components/ErrorBoundary';
@@ -13,6 +14,7 @@ import Transactions from './pages/Transactions';
 import Budgets from './pages/Budgets';
 import Goals from './pages/Goals';
 import Reports from './pages/Reports';
+import Settings from './pages/Settings';
 
 export default function App() {
   return (
@@ -30,6 +32,7 @@ export default function App() {
               <Route path="/budgets" element={<Budgets />} />
               <Route path="/goals" element={<Goals />} />
               <Route path="/reports" element={<Reports />} />
+              <Route path="/settings" element={<Settings />} />
             </Route>
 
             <Route path="*" element={<Navigate to="/" replace />} />

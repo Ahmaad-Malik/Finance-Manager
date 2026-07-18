@@ -74,4 +74,61 @@ const getProfile = async (req, res) => {
   res.status(200).json(req.user);
 };
 
-module.exports = { registerUser, loginUser, getProfile };
+// @route   PUT /api/auth/profile
+// @access  Private
+// Body: { name }
+const updateProfile = async (req, res) => {
+  try {
+    const { name } = req.body;
+
+    if (!name || !name.trim()) {
+      return res.status(400).json({ message: 'Name is required' });
+    }
+
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    user.name = name.trim();
+    await user.save();
+
+    res.status(200).json({ _id: user._id, name: user.name, email: user.email });
+  } catch (error) {
+    console.error('Update profile error:', error);
+    res.status(500).json({ message: 'Server error updating profile', error: error.message });
+  }
+};
+
+// @route   PUT /api/auth/password
+// @access  Private
+// Body: { currentPassword, newPassword }
+const updatePassword = async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ message: 'Current password and new password are required' });
+    }
+    if (newPassword.length < 6) {
+      return res.status(400).json({ message: 'New password must be at least 6 characters' });
+    }
+
+    // Need the hash this time, so explicitly select it (schema excludes it by default)
+    const user = await User.findById(req.user._id).select('+password');
+
+    if (!user || !(await user.matchPassword(currentPassword))) {
+      return res.status(401).json({ message: 'Current password is incorrect' });
+    }
+
+    user.password = newPassword; // pre-save hook rehashes automatically
+    await user.save();
+
+    res.status(200).json({ message: 'Password updated successfully' });
+  } catch (error) {
+    console.error('Update password error:', error);
+    res.status(500).json({ message: 'Server error updating password', error: error.message });
+  }
+};
+
+module.exports = { registerUser, loginUser, getProfile, updateProfile, updatePassword };

@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { jwtDecode } from 'jwt-decode';
-import { loginUser, registerUser } from '../api/authApi';
+import { loginUser, registerUser, updateProfile as updateProfileApi } from '../api/authApi';
 
 const AuthContext = createContext(null);
 
@@ -65,6 +65,16 @@ export function AuthProvider({ children }) {
     setUser(null);
   };
 
+  // Updates just the display fields (name) after a successful profile edit,
+  // without touching the token — the session stays valid.
+  const updateProfile = async (name) => {
+    const { data } = await updateProfileApi({ name });
+    const updatedUser = { ...user, name: data.name };
+    localStorage.setItem('user', JSON.stringify(updatedUser));
+    setUser(updatedUser);
+    return updatedUser;
+  };
+
   const value = {
     user,
     token,
@@ -73,6 +83,7 @@ export function AuthProvider({ children }) {
     login,
     register,
     logout,
+    updateProfile,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
