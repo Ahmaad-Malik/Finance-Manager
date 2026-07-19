@@ -22,6 +22,10 @@ const userSchema = new mongoose.Schema(
       minlength: 6,
       select: false, // won't be returned in queries by default
     },
+    profilePicture: {
+      type: String,
+      default: '',
+    },
   },
   { timestamps: true } // adds createdAt and updatedAt automatically
 );

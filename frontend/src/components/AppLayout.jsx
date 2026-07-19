@@ -2,7 +2,7 @@ import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard,
   Receipt,
-  PiggyBank,
+  Landmark,
   Target,
   BarChart3,
   Settings as SettingsIcon,
@@ -12,11 +12,12 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
+import Avatar from './Avatar';
 
 const NAV_ITEMS = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard, end: true },
   { to: '/transactions', label: 'Transactions', icon: Receipt },
-  { to: '/budgets', label: 'Budgets', icon: PiggyBank },
+  { to: '/budgets', label: 'Budgets', icon: Landmark },
   { to: '/goals', label: 'Goals', icon: Target },
   { to: '/reports', label: 'Reports', icon: BarChart3 },
 ];
@@ -24,15 +25,6 @@ const NAV_ITEMS = [
 const railLinkClass = ({ isActive }) => `rail-icon-btn${isActive ? ' active' : ''}`;
 const topLinkClass = ({ isActive }) => `top-nav-link${isActive ? ' active' : ''}`;
 const tabLinkClass = ({ isActive }) => `mobile-tab${isActive ? ' active' : ''}`;
-
-const getInitials = (name) =>
-  (name || '?')
-    .trim()
-    .split(/\s+/)
-    .map((part) => part[0])
-    .slice(0, 2)
-    .join('')
-    .toUpperCase();
 
 export default function AppLayout() {
   const { user, logout } = useAuth();
@@ -72,9 +64,7 @@ export default function AppLayout() {
               <span className="user-name">{user?.name}</span>
               <span className="user-email">{user?.email}</span>
             </div>
-            <div className="user-avatar" aria-hidden="true">
-              {getInitials(user?.name)}
-            </div>
+            <Avatar name={user?.name} src={user?.profilePicture} className="user-avatar" />
           </div>
           <button
             type="button"

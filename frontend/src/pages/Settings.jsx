@@ -1,13 +1,60 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { ArrowLeft, User, KeyRound } from 'lucide-react';
+import { ArrowLeft, User, KeyRound, ImagePlus } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { updatePassword as updatePasswordApi } from '../api/authApi';
+import Avatar from '../components/Avatar';
+
+const ALLOWED_AVATAR_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+const MAX_AVATAR_SIZE = 5 * 1024 * 1024; // 5MB, matches the backend limit
 
 export default function Settings() {
-  const { user, updateProfile } = useAuth();
+  const { user, updateProfile, updateProfilePicture, removeProfilePicture } = useAuth();
   const navigate = useNavigate();
+
+  // --- Profile picture ---
+  const fileInputRef = useRef(null);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+
+  const handleAvatarButtonClick = () => fileInputRef.current?.click();
+
+  const handleAvatarChange = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = ''; // reset so choosing the same file again still fires onChange
+    if (!file) return;
+
+    if (!ALLOWED_AVATAR_TYPES.includes(file.type)) {
+      toast.error('Please choose a JPEG, PNG, or WEBP image.');
+      return;
+    }
+    if (file.size > MAX_AVATAR_SIZE) {
+      toast.error('Image must be 5MB or smaller.');
+      return;
+    }
+
+    setUploadingAvatar(true);
+    try {
+      await updateProfilePicture(file);
+      toast.success('Profile picture updated.');
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to update profile picture.');
+    } finally {
+      setUploadingAvatar(false);
+    }
+  };
+
+  const handleAvatarRemove = async () => {
+    setUploadingAvatar(true);
+    try {
+      await removeProfilePicture();
+      toast.success('Profile picture removed.');
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to remove profile picture.');
+    } finally {
+      setUploadingAvatar(false);
+    }
+  };
 
   // --- Profile (name) form ---
   const [name, setName] = useState(user?.name || '');
@@ -97,6 +144,40 @@ export default function Settings() {
       </div>
 
       <h1>Settings</h1>
+
+      <div className="section settings-section">
+        <div className="section-header">
+          <h2><ImagePlus size={17} strokeWidth={2.2} className="section-header-icon" /> Profile picture</h2>
+        </div>
+
+        <div className="avatar-upload-row">
+          <Avatar name={user?.name} src={user?.profilePicture} className="settings-avatar" />
+
+          <div className="avatar-actions">
+            <button type="button" className="btn-secondary" onClick={handleAvatarButtonClick} disabled={uploadingAvatar}>
+              {uploadingAvatar ? 'Uploading...' : 'Change photo'}
+            </button>
+            {user?.profilePicture && (
+              <button
+                type="button"
+                className="btn-link btn-link--danger"
+                onClick={handleAvatarRemove}
+                disabled={uploadingAvatar}
+              >
+                Remove photo
+              </button>
+            )}
+            <p className="avatar-hint">JPEG, PNG, or WEBP. Up to 5MB.</p>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              onChange={handleAvatarChange}
+              hidden
+            />
+          </div>
+        </div>
+      </div>
 
       <div className="section settings-section">
         <div className="section-header">

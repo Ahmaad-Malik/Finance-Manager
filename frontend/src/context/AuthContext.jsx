@@ -1,6 +1,12 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { jwtDecode } from 'jwt-decode';
-import { loginUser, registerUser, updateProfile as updateProfileApi } from '../api/authApi';
+import {
+  loginUser,
+  registerUser,
+  updateProfile as updateProfileApi,
+  updateProfilePicture as updateProfilePictureApi,
+  removeProfilePicture as removeProfilePictureApi,
+} from '../api/authApi';
 
 const AuthContext = createContext(null);
 
@@ -75,6 +81,24 @@ export function AuthProvider({ children }) {
     return updatedUser;
   };
 
+  // Uploads a new avatar image and stores the returned path on the user.
+  const updateProfilePicture = async (file) => {
+    const { data } = await updateProfilePictureApi(file);
+    const updatedUser = { ...user, profilePicture: data.profilePicture };
+    localStorage.setItem('user', JSON.stringify(updatedUser));
+    setUser(updatedUser);
+    return updatedUser;
+  };
+
+  // Clears the avatar image, falling back to the initials avatar.
+  const removeProfilePicture = async () => {
+    const { data } = await removeProfilePictureApi();
+    const updatedUser = { ...user, profilePicture: data.profilePicture };
+    localStorage.setItem('user', JSON.stringify(updatedUser));
+    setUser(updatedUser);
+    return updatedUser;
+  };
+
   const value = {
     user,
     token,
@@ -84,6 +108,8 @@ export function AuthProvider({ children }) {
     register,
     logout,
     updateProfile,
+    updateProfilePicture,
+    removeProfilePicture,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

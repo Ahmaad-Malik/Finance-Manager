@@ -1,4 +1,6 @@
 const jwt = require('jsonwebtoken');
+const fs = require('fs');
+const path = require('path');
 const User = require('../models/user');
 
 // Helper to generate JWT
@@ -30,6 +32,7 @@ const registerUser = async (req, res) => {
       _id: user._id,
       name: user.name,
       email: user.email,
+      profilePicture: user.profilePicture || '',
       token: generateToken(user._id),
     });
   } catch (error) {
@@ -59,6 +62,7 @@ const loginUser = async (req, res) => {
       _id: user._id,
       name: user.name,
       email: user.email,
+      profilePicture: user.profilePicture || '',
       token: generateToken(user._id),
     });
   } catch (error) {
@@ -93,7 +97,7 @@ const updateProfile = async (req, res) => {
     user.name = name.trim();
     await user.save();
 
-    res.status(200).json({ _id: user._id, name: user.name, email: user.email });
+    res.status(200).json({ _id: user._id, name: user.name, email: user.email, profilePicture: user.profilePicture || '' });
   } catch (error) {
     console.error('Update profile error:', error);
     res.status(500).json({ message: 'Server error updating profile', error: error.message });
@@ -131,4 +135,77 @@ const updatePassword = async (req, res) => {
   }
 };
 
-module.exports = { registerUser, loginUser, getProfile, updateProfile, updatePassword };
+// Deletes a previously uploaded avatar file from disk, ignoring any errors
+// (e.g. file already gone). Never lets cleanup failures break the request.
+const deleteOldAvatarFile = (profilePicturePath) => {
+  if (!profilePicturePath) return;
+  const filename = path.basename(profilePicturePath);
+  const fullPath = path.join(__dirname, '..', 'uploads', filename);
+  fs.unlink(fullPath, () => {});
+};
+
+// @route   PUT /api/auth/profile/picture
+// @access  Private
+// Form field: 'avatar' (multipart/form-data)
+const updateProfilePicture = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: 'Please upload an image file' });
+    }
+
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    deleteOldAvatarFile(user.profilePicture);
+
+    user.profilePicture = `/uploads/${req.file.filename}`;
+    await user.save();
+
+    res.status(200).json({
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      profilePicture: user.profilePicture,
+    });
+  } catch (error) {
+    console.error('Update profile picture error:', error);
+    res.status(500).json({ message: 'Server error updating profile picture', error: error.message });
+  }
+};
+
+// @route   DELETE /api/auth/profile/picture
+// @access  Private
+const removeProfilePicture = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    deleteOldAvatarFile(user.profilePicture);
+    user.profilePicture = '';
+    await user.save();
+
+    res.status(200).json({
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      profilePicture: '',
+    });
+  } catch (error) {
+    console.error('Remove profile picture error:', error);
+    res.status(500).json({ message: 'Server error removing profile picture', error: error.message });
+  }
+};
+
+module.exports = {
+  registerUser,
+  loginUser,
+  getProfile,
+  updateProfile,
+  updatePassword,
+  updateProfilePicture,
+  removeProfilePicture,
+};
