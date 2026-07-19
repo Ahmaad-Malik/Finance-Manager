@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { useAuth } from '../context/AuthContext';
+import Footer from '../components/Footer';
 
 export default function Register() {
   const { register } = useAuth();
@@ -47,76 +48,80 @@ export default function Register() {
 
   return (
     <div className="auth-page">
-      <div className="auth-corner-brand">
-        <img src="/logo-icon.png" alt="" className="auth-corner-logo" />
-        <span>CashFin</span>
-      </div>
-
-      <form className="auth-form" onSubmit={handleSubmit}>
-        <div className="auth-form-brand">
-          <img src="/logo-icon.png" alt="CashFin" className="auth-form-logo" />
-          <h1 className="auth-form-title">CashFin</h1>
-          <p className="auth-form-tagline">Track &middot; Plan &middot; Save</p>
+      <div className="auth-page-content">
+        <div className="auth-corner-brand">
+          <img src="/logo-icon.png" alt="" className="auth-corner-logo" />
+          <span>CashFin</span>
         </div>
 
-        <h2 className="auth-form-heading">Create an account</h2>
+        <form className="auth-form" onSubmit={handleSubmit}>
+          <div className="auth-form-brand">
+            <img src="/logo-icon.png" alt="CashFin" className="auth-form-logo" />
+            <h1 className="auth-form-title">CashFin</h1>
+            <p className="auth-form-tagline">Track &middot; Plan &middot; Save</p>
+          </div>
 
-        {error && <div className="form-error">{error}</div>}
+          <h2 className="auth-form-heading">Create an account</h2>
 
-        <label htmlFor="name">Name</label>
-        <input
-          id="name"
-          name="name"
-          type="text"
-          autoComplete="name"
-          value={form.name}
-          onChange={handleChange}
-          required
-        />
+          {error && <div className="form-error">{error}</div>}
 
-        <label htmlFor="email">Email</label>
-        <input
-          id="email"
-          name="email"
-          type="email"
-          autoComplete="email"
-          value={form.email}
-          onChange={handleChange}
-          required
-        />
+          <label htmlFor="name">Name</label>
+          <input
+            id="name"
+            name="name"
+            type="text"
+            autoComplete="name"
+            value={form.name}
+            onChange={handleChange}
+            required
+          />
 
-        <label htmlFor="password">Password</label>
-        <input
-          id="password"
-          name="password"
-          type="password"
-          autoComplete="new-password"
-          value={form.password}
-          onChange={handleChange}
-          minLength={6}
-          required
-        />
+          <label htmlFor="email">Email</label>
+          <input
+            id="email"
+            name="email"
+            type="email"
+            autoComplete="email"
+            value={form.email}
+            onChange={handleChange}
+            required
+          />
 
-        <label htmlFor="confirmPassword">Confirm password</label>
-        <input
-          id="confirmPassword"
-          name="confirmPassword"
-          type="password"
-          autoComplete="new-password"
-          value={form.confirmPassword}
-          onChange={handleChange}
-          minLength={6}
-          required
-        />
+          <label htmlFor="password">Password</label>
+          <input
+            id="password"
+            name="password"
+            type="password"
+            autoComplete="new-password"
+            value={form.password}
+            onChange={handleChange}
+            minLength={6}
+            required
+          />
 
-        <button type="submit" disabled={submitting}>
-          {submitting ? 'Creating account...' : 'Register'}
-        </button>
+          <label htmlFor="confirmPassword">Confirm password</label>
+          <input
+            id="confirmPassword"
+            name="confirmPassword"
+            type="password"
+            autoComplete="new-password"
+            value={form.confirmPassword}
+            onChange={handleChange}
+            minLength={6}
+            required
+          />
 
-        <p className="auth-switch">
-          Already have an account? <Link to="/login">Log in</Link>
-        </p>
-      </form>
+          <button type="submit" disabled={submitting}>
+            {submitting ? 'Creating account...' : 'Register'}
+          </button>
+
+          <p className="auth-switch">
+            Already have an account? <Link to="/login">Log in</Link>
+          </p>
+        </form>
+      </div>
+
+      <Footer variant="auth" />
     </div>
   );
 }

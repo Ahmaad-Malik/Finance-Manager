@@ -13,6 +13,7 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import Avatar from './Avatar';
+import Footer from './Footer';
 
 const NAV_ITEMS = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard, end: true },
@@ -111,6 +112,8 @@ export default function AppLayout() {
 
         <main className="main-content">
           <Outlet />
+
+          <Footer />
         </main>
       </div>
 

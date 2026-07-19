@@ -1,7 +1,6 @@
 const mongoose = require('mongoose');
 
 // Fires once, right away, so you always know if the initial connection failed
-// and WHY, instead of the process silently dying mid-request.
 mongoose.connection.on('connected', () => {
   console.log(`✅ MongoDB Connected: ${mongoose.connection.host}/${mongoose.connection.name}`);
 });
