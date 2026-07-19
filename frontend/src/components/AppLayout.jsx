@@ -23,6 +23,7 @@ const NAV_ITEMS = [
 
 const railLinkClass = ({ isActive }) => `rail-icon-btn${isActive ? ' active' : ''}`;
 const topLinkClass = ({ isActive }) => `top-nav-link${isActive ? ' active' : ''}`;
+const tabLinkClass = ({ isActive }) => `mobile-tab${isActive ? ' active' : ''}`;
 
 const getInitials = (name) =>
   (name || '?')
@@ -49,10 +50,13 @@ export default function AppLayout() {
     <div className="app-shell">
       <header className="app-header">
         <NavLink to="/" className="header-brand" aria-label="CashFin home">
-          <img src="/logo-icon.png" alt="" className="header-logo" />
-          <span className="brand-name">CashFin</span>
+          <span className="header-logo-chip">
+            <img src="/logo-icon.png" alt="" className="header-logo" />
+          </span>
+          <span className="header-name-chip brand-name">CashFin</span>
         </NavLink>
 
+        {/* Desktop only: full text menu lives in the header */}
         <nav className="top-nav" aria-label="Primary">
           {NAV_ITEMS.map(({ to, label, icon: Icon, end }) => (
             <NavLink key={to} to={to} end={end} className={topLinkClass}>
@@ -63,12 +67,14 @@ export default function AppLayout() {
         </nav>
 
         <div className="header-user">
-          <div className="user-meta">
-            <span className="user-name">{user?.name}</span>
-            <span className="user-email">{user?.email}</span>
-          </div>
-          <div className="user-avatar" aria-hidden="true">
-            {getInitials(user?.name)}
+          <div className="user-chip">
+            <div className="user-meta">
+              <span className="user-name">{user?.name}</span>
+              <span className="user-email">{user?.email}</span>
+            </div>
+            <div className="user-avatar" aria-hidden="true">
+              {getInitials(user?.name)}
+            </div>
           </div>
           <button
             type="button"
@@ -82,17 +88,19 @@ export default function AppLayout() {
         </div>
       </header>
 
-      <div className="app-body">
-        <aside className="side-rail">
-          <nav className="side-rail-nav" aria-label="Primary">
-            {NAV_ITEMS.map(({ to, label, icon: Icon, end }) => (
-              <NavLink key={to} to={to} end={end} className={railLinkClass} title={label}>
-                <Icon size={20} strokeWidth={2} />
-                <span className="rail-label">{label}</span>
-              </NavLink>
-            ))}
-          </nav>
+      {/* Mobile/tablet only: horizontal toggle bar, the active item is highlighted */}
+      <nav className="mobile-tab-bar" aria-label="Primary">
+        {NAV_ITEMS.map(({ to, label, icon: Icon, end }) => (
+          <NavLink key={to} to={to} end={end} className={tabLinkClass}>
+            <Icon size={17} strokeWidth={2.1} />
+            <span>{label}</span>
+          </NavLink>
+        ))}
+      </nav>
 
+      <div className="app-body">
+        {/* Desktop only: slim rail with just settings + theme */}
+        <aside className="side-rail">
           <div className="side-rail-bottom">
             <NavLink to="/settings" className={railLinkClass} title="Settings">
               <SettingsIcon size={20} strokeWidth={2} />
@@ -114,6 +122,22 @@ export default function AppLayout() {
         <main className="main-content">
           <Outlet />
         </main>
+      </div>
+
+      {/* Mobile/tablet only: floating settings + theme buttons, bottom-left */}
+      <div className="mobile-fab-stack">
+        <NavLink to="/settings" className={railLinkClass} title="Settings" aria-label="Settings">
+          <SettingsIcon size={20} strokeWidth={2} />
+        </NavLink>
+        <button
+          type="button"
+          className="rail-icon-btn"
+          onClick={toggleTheme}
+          title={themeLabel}
+          aria-label={themeLabel}
+        >
+          {theme === 'dark' ? <Sun size={20} strokeWidth={2} /> : <Moon size={20} strokeWidth={2} />}
+        </button>
       </div>
     </div>
   );

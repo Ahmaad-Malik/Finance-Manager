@@ -15,8 +15,8 @@ const getInitialTheme = () => {
 // Keep Chart.js legend/axis text legible against the current background —
 // otherwise chart labels stay a fixed dark gray and become unreadable on a dark page.
 const syncChartDefaults = (theme) => {
-  Chart.defaults.color = theme === 'dark' ? '#9cbaa9' : '#52695c';
-  Chart.defaults.borderColor = theme === 'dark' ? '#1c332a' : '#e2f0e6';
+  Chart.defaults.color = theme === 'dark' ? '#408A71' : '#659287';
+  Chart.defaults.borderColor = theme === 'dark' ? '#163029' : '#d9ebd0';
 };
 
 export function ThemeProvider({ children }) {
