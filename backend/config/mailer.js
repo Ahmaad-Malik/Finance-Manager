@@ -11,8 +11,8 @@ const nodemailer = require('nodemailer');
 // it times out instead of falling back to IPv4. Forcing IPv4 avoids that.
 const transporter = nodemailer.createTransport({
   host: 'smtp.gmail.com',
-  port: 587,
-  secure: false, // STARTTLS, not implicit TLS
+  port: 465,
+  secure: true, // implicit TLS
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS,
