@@ -26,6 +26,25 @@ const userSchema = new mongoose.Schema(
       type: String,
       default: '',
     },
+    emailVerified: {
+      type: Boolean,
+      default: false,
+    },
+    // OTP fields are excluded from normal queries (select: false) and only
+    // pulled in explicitly with .select('+otpHash +otpExpires +otpAttempts')
+    otpHash: {
+      type: String,
+      select: false,
+    },
+    otpExpires: {
+      type: Date,
+      select: false,
+    },
+    otpAttempts: {
+      type: Number,
+      default: 0,
+      select: false,
+    },
   },
   { timestamps: true } // adds createdAt and updatedAt automatically
 );

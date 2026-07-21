@@ -2,12 +2,26 @@ const jwt = require('jsonwebtoken');
 const fs = require('fs');
 const path = require('path');
 const User = require('../models/user');
+const sendOtpEmail = require('../config/mailer');
+const { generateOtp, hashOtp, compareOtp, OTP_TTL_MS, MAX_ATTEMPTS } = require('../utils/otp');
 
 // Helper to generate JWT
 const generateToken = (userId) => {
   return jwt.sign({ id: userId }, process.env.JWT_SECRET, {
     expiresIn: '30d',
   });
+};
+
+// Generates a fresh OTP, hashes it, stores it on the user (never the plain
+// value), and emails the plain value to the user. The plain OTP is never
+// returned from any API response.
+const issueOtp = async (user) => {
+  const otp = generateOtp();
+  user.otpHash = await hashOtp(otp);
+  user.otpExpires = new Date(Date.now() + OTP_TTL_MS);
+  user.otpAttempts = 0;
+  await user.save({ validateBeforeSave: false });
+  await sendOtpEmail(user.email, otp);
 };
 
 // @route   POST /api/auth/register
@@ -25,10 +39,66 @@ const registerUser = async (req, res) => {
       return res.status(400).json({ message: 'User with this email already exists' });
     }
 
-    // Password gets hashed automatically via the pre-save hook in User model
-    const user = await User.create({ name, email, password });
+    // Password gets hashed automatically via the pre-save hook in User model.
+    // Account is created as unverified — it only becomes usable after OTP verification.
+    const user = await User.create({ name, email, password, emailVerified: false });
 
+    await issueOtp(user);
+
+    // No token is returned here — the account isn't usable until the OTP is verified.
     res.status(201).json({
+      message: 'Registration started. A verification code has been sent to your email.',
+      email: user.email,
+    });
+  } catch (error) {
+    console.error('Registration error:', error);
+    res.status(500).json({ message: 'Server error during registration', error: error.message });
+  }
+};
+
+// @route   POST /api/auth/verify-otp
+// @access  Public
+// Body: { email, otp }
+const verifyOtp = async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+    if (!email || !otp) {
+      return res.status(400).json({ message: 'Email and OTP are required' });
+    }
+
+    const user = await User.findOne({ email }).select('+otpHash +otpExpires +otpAttempts');
+    if (!user) {
+      return res.status(400).json({ message: 'No pending verification for this email' });
+    }
+
+    if (user.emailVerified) {
+      return res.status(400).json({ message: 'Email is already verified' });
+    }
+
+    if (!user.otpHash || !user.otpExpires || Date.now() > user.otpExpires.getTime()) {
+      return res.status(400).json({ message: 'OTP has expired. Please request a new one.' });
+    }
+
+    if (user.otpAttempts >= MAX_ATTEMPTS) {
+      return res.status(429).json({ message: 'Too many attempts. Please request a new OTP.' });
+    }
+
+    const isMatch = await compareOtp(otp, user.otpHash);
+    user.otpAttempts += 1;
+
+    if (!isMatch) {
+      await user.save({ validateBeforeSave: false });
+      return res.status(400).json({ message: 'Incorrect OTP' });
+    }
+
+    // Success — mark verified and invalidate the OTP so it can't be reused.
+    user.emailVerified = true;
+    user.otpHash = undefined;
+    user.otpExpires = undefined;
+    user.otpAttempts = 0;
+    await user.save({ validateBeforeSave: false });
+
+    res.status(200).json({
       _id: user._id,
       name: user.name,
       email: user.email,
@@ -36,8 +106,36 @@ const registerUser = async (req, res) => {
       token: generateToken(user._id),
     });
   } catch (error) {
-    console.error('Registration error:', error);
-    res.status(500).json({ message: 'Server error during registration', error: error.message });
+    console.error('OTP verification error:', error);
+    res.status(500).json({ message: 'Server error during OTP verification', error: error.message });
+  }
+};
+
+// @route   POST /api/auth/resend-otp
+// @access  Public
+// Body: { email }
+const resendOtp = async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      return res.status(400).json({ message: 'Email is required' });
+    }
+
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(400).json({ message: 'No pending verification for this email' });
+    }
+
+    if (user.emailVerified) {
+      return res.status(400).json({ message: 'Email is already verified' });
+    }
+
+    await issueOtp(user);
+
+    res.status(200).json({ message: 'A new verification code has been sent to your email.' });
+  } catch (error) {
+    console.error('Resend OTP error:', error);
+    res.status(500).json({ message: 'Server error while resending OTP', error: error.message });
   }
 };
 
@@ -56,6 +154,14 @@ const loginUser = async (req, res) => {
 
     if (!user || !(await user.matchPassword(password))) {
       return res.status(401).json({ message: 'Invalid email or password' });
+    }
+
+    if (!user.emailVerified) {
+      return res.status(403).json({
+        message: 'Please verify your email before logging in.',
+        email: user.email,
+        needsVerification: true,
+      });
     }
 
     res.status(200).json({
@@ -202,6 +308,8 @@ const removeProfilePicture = async (req, res) => {
 
 module.exports = {
   registerUser,
+  verifyOtp,
+  resendOtp,
   loginUser,
   getProfile,
   updateProfile,

@@ -3,6 +3,8 @@ import { jwtDecode } from 'jwt-decode';
 import {
   loginUser,
   registerUser,
+  verifyOtp as verifyOtpApi,
+  resendOtp as resendOtpApi,
   updateProfile as updateProfileApi,
   updateProfilePicture as updateProfilePictureApi,
   removeProfilePicture as removeProfilePictureApi,
@@ -59,8 +61,20 @@ export function AuthProvider({ children }) {
   };
 
   const register = async (name, email, password) => {
+    // Backend creates an unverified account and emails an OTP.
+    // No token comes back yet — the caller should route to the OTP screen.
     const { data } = await registerUser({ name, email, password });
+    return data; // { message, email }
+  };
+
+  const verifyOtp = async (email, otp) => {
+    const { data } = await verifyOtpApi({ email, otp });
     persistSession(data);
+    return data;
+  };
+
+  const resendOtp = async (email) => {
+    const { data } = await resendOtpApi({ email });
     return data;
   };
 
@@ -106,6 +120,8 @@ export function AuthProvider({ children }) {
     loading,
     login,
     register,
+    verifyOtp,
+    resendOtp,
     logout,
     updateProfile,
     updateProfilePicture,

@@ -27,7 +27,13 @@ export default function Login() {
       const redirectTo = location.state?.from?.pathname || '/';
       navigate(redirectTo, { replace: true });
     } catch (err) {
-      setError(err.response?.data?.message || 'Login failed. Please try again.');
+      const data = err.response?.data;
+      if (data?.needsVerification) {
+        toast.info('Please verify your email to continue.');
+        navigate('/verify-otp', { state: { email: data.email }, replace: true });
+        return;
+      }
+      setError(data?.message || 'Login failed. Please try again.');
     } finally {
       setSubmitting(false);
     }
