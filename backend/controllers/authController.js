@@ -34,14 +34,26 @@ const registerUser = async (req, res) => {
       return res.status(400).json({ message: 'Please provide name, email, and password' });
     }
 
-    const userExists = await User.findOne({ email });
-    if (userExists) {
+    const existingUser = await User.findOne({ email }).select('+password');
+
+    if (existingUser && existingUser.emailVerified) {
       return res.status(400).json({ message: 'User with this email already exists' });
     }
 
-    // Password gets hashed automatically via the pre-save hook in User model.
-    // Account is created as unverified — it only becomes usable after OTP verification.
-    const user = await User.create({ name, email, password, emailVerified: false });
+    let user;
+    if (existingUser && !existingUser.emailVerified) {
+      // A previous registration attempt for this email never got verified
+      // (OTP expired / never arrived / user abandoned it). Instead of
+      // blocking with "already exists", refresh their details and send a
+      // brand new OTP so they can pick up where they left off.
+      existingUser.name = name;
+      existingUser.password = password; // pre-save hook rehashes since it's modified
+      user = await existingUser.save();
+    } else {
+      // Password gets hashed automatically via the pre-save hook in User model.
+      // Account is created as unverified — it only becomes usable after OTP verification.
+      user = await User.create({ name, email, password, emailVerified: false });
+    }
 
     await issueOtp(user);
 

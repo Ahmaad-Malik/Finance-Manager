@@ -29,8 +29,7 @@ export default function Login() {
     } catch (err) {
       const data = err.response?.data;
       if (data?.needsVerification) {
-        toast.info('Please verify your email to continue.');
-        navigate('/verify-otp', { state: { email: data.email }, replace: true });
+        setError('Verification pending. Please check your email for the verification code sent when you registered, or register again to get a new one.');
         return;
       }
       setError(data?.message || 'Login failed. Please try again.');
