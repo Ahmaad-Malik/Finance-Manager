@@ -2,9 +2,8 @@ import { createContext, useContext, useState, useEffect } from 'react';
 import { jwtDecode } from 'jwt-decode';
 import {
   loginUser,
-  registerUser,
-  verifyOtp as verifyOtpApi,
-  resendOtp as resendOtpApi,
+  requestRegisterOtp,
+  verifyRegisterOtp,
   updateProfile as updateProfileApi,
   updateProfilePicture as updateProfilePictureApi,
   removeProfilePicture as removeProfilePictureApi,
@@ -60,21 +59,17 @@ export function AuthProvider({ children }) {
     return data;
   };
 
-  const register = async (name, email, password) => {
-    // Backend creates an unverified account and emails an OTP.
-    // No token comes back yet — the caller should route to the OTP screen.
-    const { data } = await registerUser({ name, email, password });
-    return data; // { message, email }
-  };
-
-  const verifyOtp = async (email, otp) => {
-    const { data } = await verifyOtpApi({ email, otp });
-    persistSession(data);
+  // Step 1: submit the registration form -> backend emails a 6-digit code.
+  // Does not create the account or log the user in yet.
+  const requestOtp = async (name, email, password) => {
+    const { data } = await requestRegisterOtp({ name, email, password });
     return data;
   };
 
-  const resendOtp = async (email) => {
-    const { data } = await resendOtpApi({ email });
+  // Step 2: submit the code -> backend creates the account and returns a session.
+  const verifyOtp = async (email, otp) => {
+    const { data } = await verifyRegisterOtp({ email, otp });
+    persistSession(data);
     return data;
   };
 
@@ -119,9 +114,8 @@ export function AuthProvider({ children }) {
     isAuthenticated: !!token,
     loading,
     login,
-    register,
+    requestOtp,
     verifyOtp,
-    resendOtp,
     logout,
     updateProfile,
     updateProfilePicture,

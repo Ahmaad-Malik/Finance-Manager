@@ -27,12 +27,7 @@ export default function Login() {
       const redirectTo = location.state?.from?.pathname || '/';
       navigate(redirectTo, { replace: true });
     } catch (err) {
-      const data = err.response?.data;
-      if (data?.needsVerification) {
-        setError('Verification pending. Please check your email for the verification code sent when you registered, or register again to get a new one.');
-        return;
-      }
-      setError(data?.message || 'Login failed. Please try again.');
+      setError(err.response?.data?.message || 'Login failed. Please try again.');
     } finally {
       setSubmitting(false);
     }
