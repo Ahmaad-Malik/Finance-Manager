@@ -689,6 +689,41 @@ img {
   text-align: center;
 }
 
+/* Text-style buttons inside .auth-form (e.g. "Resend code", "Use a different
+   email"). Needs its own color rule since .auth-form button (the solid submit
+   button) sets color: white globally, which is invisible once background is
+   stripped down to none for these link-style buttons. */
+.auth-link-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  font-weight: 600;
+  color: var(--color-primary-dark) !important;
+  text-decoration: underline;
+  cursor: pointer;
+  box-shadow: none !important;
+}
+
+.auth-link-btn:hover:not(:disabled) {
+  color: var(--color-primary) !important;
+}
+
+.auth-link-btn:disabled {
+  color: var(--color-text-faint) !important;
+  text-decoration: none;
+  cursor: not-allowed;
+}
+
+[data-theme='dark'] .auth-link-btn {
+  color: var(--color-text) !important;
+}
+
+[data-theme='dark'] .auth-link-btn:hover:not(:disabled) {
+  color: var(--color-primary) !important;
+}
+
 .form-error {
   background: var(--color-danger-bg);
   color: var(--color-danger-text);

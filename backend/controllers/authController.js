@@ -43,11 +43,9 @@ const requestRegisterOtp = async (req, res) => {
     const otp = generateOtp();
     const hashedOtp = await bcrypt.hash(otp, 10);
 
-    // Clear out any earlier pending OTP for this email, then store the new one.
-    // Password is kept plain here (briefly) so User's own pre-save hook hashes
-    // it the normal way once the account is actually created; this record
-    // auto-deletes after 10 minutes regardless (see models/otp.js TTL index).
-    await Otp.deleteMany({ email: email.toLowerCase().trim() });
+    // Every OTP request creates its own record (kept as history — see models/otp.js).
+    // Password is kept plain here only until the account is created (see
+    // verifyRegisterOtp), so User's own pre-save hook hashes it the normal way.
     await Otp.create({ name, email, password, hashedOtp });
 
     await sendOtpEmail(email, otp, name);
@@ -71,19 +69,19 @@ const verifyRegisterOtp = async (req, res) => {
       return res.status(400).json({ message: 'Email and OTP are required' });
     }
 
-    const record = await Otp.findOne({ email: email.toLowerCase().trim() });
+    // Multiple OTP requests can exist per email now (kept as history), so
+    // always act on the most recent one that hasn't been used yet.
+    const record = await Otp.findOne({ email: email.toLowerCase().trim(), verified: false }).sort({ createdAt: -1 });
     if (!record) {
       return res.status(400).json({ message: 'No OTP request found for this email. Please request a new one.' });
     }
 
     const expired = Date.now() - record.createdAt.getTime() > OTP_TTL_MS;
     if (expired) {
-      await Otp.deleteOne({ _id: record._id });
       return res.status(400).json({ message: 'OTP has expired. Please request a new one.' });
     }
 
     if (record.attempts >= MAX_OTP_ATTEMPTS) {
-      await Otp.deleteOne({ _id: record._id });
       return res.status(400).json({ message: 'Too many incorrect attempts. Please request a new OTP.' });
     }
 
@@ -97,7 +95,6 @@ const verifyRegisterOtp = async (req, res) => {
     // Guard against the rare case where the account was created in the meantime
     const userExists = await User.findOne({ email: record.email });
     if (userExists) {
-      await Otp.deleteOne({ _id: record._id });
       return res.status(400).json({ message: 'User with this email already exists' });
     }
 
@@ -108,7 +105,12 @@ const verifyRegisterOtp = async (req, res) => {
       password: record.password,
     });
 
-    await Otp.deleteOne({ _id: record._id });
+    // Keep the record for history, but mark it used and scrub the plain
+    // password now that it's served its purpose (it's no longer needed).
+    await Otp.updateOne(
+      { _id: record._id },
+      { $set: { verified: true, verifiedAt: new Date() }, $unset: { password: '' } }
+    );
 
     res.status(201).json({
       _id: user._id,

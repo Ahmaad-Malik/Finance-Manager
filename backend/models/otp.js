@@ -1,7 +1,8 @@
 const mongoose = require('mongoose');
 
-// Holds a pending registration until the user verifies their email with the OTP.
-// The actual User document is only created after successful verification.
+// Full history of every registration OTP request — kept permanently (not
+// auto-deleted) so you have an audit trail of who requested a code and when.
+// The actual User document is only created once verified=true here.
 const otpSchema = new mongoose.Schema({
   name: {
     type: String,
@@ -14,12 +15,12 @@ const otpSchema = new mongoose.Schema({
     trim: true,
     index: true,
   },
-  // Plain password, held only for the short OTP window so that User's existing
-  // pre-save hook can hash it the normal way once the account is actually created.
-  // This document self-destructs (see TTL index below), so it's never kept around.
+  // Plain password, needed only until the account is actually created (so
+  // User's existing pre-save hook can hash it the normal way). Cleared out
+  // (see verifyRegisterOtp) right after the account is made — everything
+  // else on this record is kept for history.
   password: {
     type: String,
-    required: true,
   },
   hashedOtp: {
     type: String,
@@ -29,10 +30,18 @@ const otpSchema = new mongoose.Schema({
     type: Number,
     default: 0,
   },
+  verified: {
+    type: Boolean,
+    default: false,
+  },
+  verifiedAt: {
+    type: Date,
+    default: null,
+  },
   createdAt: {
     type: Date,
     default: Date.now,
-    expires: 600, // TTL: MongoDB auto-deletes this document 600s (10 min) after createdAt
+    // No `expires` here on purpose — records are kept, not auto-deleted.
   },
 });
 

@@ -146,9 +146,9 @@ export default function Register() {
               ) : (
                 <button
                   type="button"
+                  className="auth-link-btn"
                   onClick={handleResend}
                   disabled={submitting}
-                  style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', textDecoration: 'underline' }}
                 >
                   Resend code
                 </button>
@@ -158,8 +158,8 @@ export default function Register() {
             <p className="auth-switch">
               <button
                 type="button"
+                className="auth-link-btn"
                 onClick={() => { setStep('details'); setError(''); setOtp(''); }}
-                style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', textDecoration: 'underline' }}
               >
                 Use a different email
               </button>
