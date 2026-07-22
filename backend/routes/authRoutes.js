@@ -1,8 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const {
-  requestRegisterOtp,
-  verifyRegisterOtp,
+  registerUser,
   loginUser,
   getProfile,
   updateProfile,
@@ -12,11 +11,8 @@ const {
 } = require('../controllers/authController');
 const { protect } = require('../middleware/authMiddleware');
 const upload = require('../middleware/uploadMiddleware');
-const { otpRequestLimiter, otpVerifyLimiter } = require('../middleware/otpRateLimiter');
 
-// Registration is now two-step: request an OTP, then verify it to create the account.
-router.post('/register/request-otp', otpRequestLimiter, requestRegisterOtp);
-router.post('/register/verify-otp', otpVerifyLimiter, verifyRegisterOtp);
+router.post('/register', registerUser);
 router.post('/login', loginUser);
 router.get('/profile', protect, getProfile);
 router.put('/profile', protect, updateProfile);

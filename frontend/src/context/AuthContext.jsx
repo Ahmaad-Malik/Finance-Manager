@@ -2,8 +2,7 @@ import { createContext, useContext, useState, useEffect } from 'react';
 import { jwtDecode } from 'jwt-decode';
 import {
   loginUser,
-  requestRegisterOtp,
-  verifyRegisterOtp,
+  registerUser,
   updateProfile as updateProfileApi,
   updateProfilePicture as updateProfilePictureApi,
   removeProfilePicture as removeProfilePictureApi,
@@ -59,16 +58,9 @@ export function AuthProvider({ children }) {
     return data;
   };
 
-  // Step 1: submit the registration form -> backend emails a 6-digit code.
-  // Does not create the account or log the user in yet.
-  const requestOtp = async (name, email, password) => {
-    const { data } = await requestRegisterOtp({ name, email, password });
-    return data;
-  };
-
-  // Step 2: submit the code -> backend creates the account and returns a session.
-  const verifyOtp = async (email, otp) => {
-    const { data } = await verifyRegisterOtp({ email, otp });
+  // Submits the registration form -> backend creates the account and returns a session.
+  const register = async (name, email, password) => {
+    const { data } = await registerUser({ name, email, password });
     persistSession(data);
     return data;
   };
@@ -114,8 +106,7 @@ export function AuthProvider({ children }) {
     isAuthenticated: !!token,
     loading,
     login,
-    requestOtp,
-    verifyOtp,
+    register,
     logout,
     updateProfile,
     updateProfilePicture,

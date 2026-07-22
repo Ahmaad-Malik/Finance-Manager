@@ -1,11 +1,7 @@
 const jwt = require('jsonwebtoken');
 const fs = require('fs');
 const path = require('path');
-const crypto = require('crypto');
-const bcrypt = require('bcryptjs');
 const User = require('../models/user');
-const Otp = require('../models/otp');
-const sendOtpEmail = require('../utils/mailer');
 
 // Helper to generate JWT
 const generateToken = (userId) => {
@@ -14,17 +10,12 @@ const generateToken = (userId) => {
   });
 };
 
-const generateOtp = () => crypto.randomInt(100000, 1000000).toString(); // 6-digit code
-
-const OTP_TTL_MS = 10 * 60 * 1000; // must match the TTL on the Otp model
-const MAX_OTP_ATTEMPTS = 5;
-
-// @route   POST /api/auth/register/request-otp
+// @route   POST /api/auth/register
 // @access  Public
 // Body: { name, email, password }
-// Registration is now two-step: this validates the form and emails a 6-digit
-// code. The account itself isn't created until verifyRegisterOtp succeeds.
-const requestRegisterOtp = async (req, res) => {
+// Simple one-step registration: validates the form and creates the account
+// right away (no email verification step).
+const registerUser = async (req, res) => {
   try {
     const { name, email, password } = req.body;
 
@@ -40,77 +31,8 @@ const requestRegisterOtp = async (req, res) => {
       return res.status(400).json({ message: 'User with this email already exists' });
     }
 
-    const otp = generateOtp();
-    const hashedOtp = await bcrypt.hash(otp, 10);
-
-    // Every OTP request creates its own record (kept as history — see models/otp.js).
-    // Password is kept plain here only until the account is created (see
-    // verifyRegisterOtp), so User's own pre-save hook hashes it the normal way.
-    await Otp.create({ name, email, password, hashedOtp });
-
-    await sendOtpEmail(email, otp, name);
-
-    res.status(200).json({ message: 'OTP sent to your email', email });
-  } catch (error) {
-    console.error('Send registration OTP error:', error);
-    res.status(500).json({ message: 'Failed to send OTP', error: error.message });
-  }
-};
-
-// @route   POST /api/auth/register/verify-otp
-// @access  Public
-// Body: { email, otp }
-// Confirms the code and, on success, actually creates the User account.
-const verifyRegisterOtp = async (req, res) => {
-  try {
-    const { email, otp } = req.body;
-
-    if (!email || !otp) {
-      return res.status(400).json({ message: 'Email and OTP are required' });
-    }
-
-    // Multiple OTP requests can exist per email now (kept as history), so
-    // always act on the most recent one that hasn't been used yet.
-    const record = await Otp.findOne({ email: email.toLowerCase().trim(), verified: false }).sort({ createdAt: -1 });
-    if (!record) {
-      return res.status(400).json({ message: 'No OTP request found for this email. Please request a new one.' });
-    }
-
-    const expired = Date.now() - record.createdAt.getTime() > OTP_TTL_MS;
-    if (expired) {
-      return res.status(400).json({ message: 'OTP has expired. Please request a new one.' });
-    }
-
-    if (record.attempts >= MAX_OTP_ATTEMPTS) {
-      return res.status(400).json({ message: 'Too many incorrect attempts. Please request a new OTP.' });
-    }
-
-    const isMatch = await bcrypt.compare(otp, record.hashedOtp);
-    if (!isMatch) {
-      record.attempts += 1;
-      await record.save();
-      return res.status(400).json({ message: 'Incorrect OTP. Please try again.' });
-    }
-
-    // Guard against the rare case where the account was created in the meantime
-    const userExists = await User.findOne({ email: record.email });
-    if (userExists) {
-      return res.status(400).json({ message: 'User with this email already exists' });
-    }
-
     // Password gets hashed automatically via the pre-save hook in User model
-    const user = await User.create({
-      name: record.name,
-      email: record.email,
-      password: record.password,
-    });
-
-    // Keep the record for history, but mark it used and scrub the plain
-    // password now that it's served its purpose (it's no longer needed).
-    await Otp.updateOne(
-      { _id: record._id },
-      { $set: { verified: true, verifiedAt: new Date() }, $unset: { password: '' } }
-    );
+    const user = await User.create({ name, email, password });
 
     res.status(201).json({
       _id: user._id,
@@ -120,8 +42,8 @@ const verifyRegisterOtp = async (req, res) => {
       token: generateToken(user._id),
     });
   } catch (error) {
-    console.error('Verify registration OTP error:', error);
-    res.status(500).json({ message: 'Server error verifying OTP', error: error.message });
+    console.error('Register error:', error);
+    res.status(500).json({ message: 'Server error during registration', error: error.message });
   }
 };
 
@@ -285,8 +207,7 @@ const removeProfilePicture = async (req, res) => {
 };
 
 module.exports = {
-  requestRegisterOtp,
-  verifyRegisterOtp,
+  registerUser,
   loginUser,
   getProfile,
   updateProfile,

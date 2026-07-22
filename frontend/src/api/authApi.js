@@ -1,10 +1,6 @@
 import api from './axios';
 
-// Registration is two-step: request an OTP (sent to the given email), then
-// verify it to actually create the account.
-export const requestRegisterOtp = (data) => api.post('/auth/register/request-otp', data);
-export const verifyRegisterOtp = (data) => api.post('/auth/register/verify-otp', data);
-
+export const registerUser = (data) => api.post('/auth/register', data);
 export const loginUser = (data) => api.post('/auth/login', data);
 export const getProfile = () => api.get('/auth/profile');
 export const updateProfile = (data) => api.put('/auth/profile', data);
