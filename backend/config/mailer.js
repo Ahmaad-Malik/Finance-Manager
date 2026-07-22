@@ -26,7 +26,7 @@ async function sendOtpEmail(toEmail, otp) {
   await transporter.sendMail({
     from: `"CashFin" <${process.env.EMAIL_USER}>`,
     to: toEmail,
-    subject: 'Your CashFin verification code',
+    subject: 'CashFin verification code',
     html: `
       <div style="font-family: Arial, sans-serif;">
         <h2>Verify your email</h2>
