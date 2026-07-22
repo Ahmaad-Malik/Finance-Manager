@@ -1,40 +1,47 @@
-const nodemailer = require('nodemailer');
-
-// Uses your Gmail account (EMAIL_USER) + app password (EMAIL_PASS) from .env to send mail.
+// Sends the OTP email via Brevo's HTTPS transactional email API instead of raw
+// SMTP. Render (and several other hosts) can silently block or hang on
+// outbound SMTP ports (465/587), which is what was causing the "Connection
+// timeout" error. Brevo's API runs over normal HTTPS (port 443), which every
+// host allows, so this sidesteps the problem entirely.
 //
-// NOTE: using `service: 'gmail'` lets Nodemailer pick the host/port itself, and on
-// some hosts (Render included) the resulting connection resolves over IPv6, which
-// Gmail's SMTP servers can silently hang on -> "Connection timeout". Being explicit
-// about host/port and forcing IPv4 (family: 4) avoids that.
-const transporter = nodemailer.createTransport({
-  host: 'smtp.gmail.com',
-  port: 465,
-  secure: true, // true for port 465, false for 587
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-  family: 4, // force IPv4
-  connectionTimeout: 15000,
-  greetingTimeout: 15000,
-  socketTimeout: 15000,
-});
+// Setup (one-time):
+// 1. Create a free account at https://www.brevo.com
+// 2. Go to Senders, Domains & Dedicated IPs -> Senders -> add
+//    cahfin.otp@gmail.com as a sender and verify it (Brevo emails you a link).
+// 3. Go to SMTP & API -> API Keys -> Generate a new API key.
+// 4. Put that key in your .env (locally) and in Render's environment
+//    variables as BREVO_API_KEY.
+
+const BREVO_API_URL = 'https://api.brevo.com/v3/smtp/email';
 
 const sendOtpEmail = async (toEmail, otp, name = '') => {
-  await transporter.sendMail({
-    from: `"CashFin" <${process.env.EMAIL_USER}>`,
-    to: toEmail,
-    subject: 'Verify your CashFin account',
-    html: `
-      <div style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto; color: #1a1a1a;">
-        <h2 style="margin-bottom: 4px;">Verify your email</h2>
-        <p>Hi ${name || 'there'},</p>
-        <p>Use the code below to verify your email and finish creating your CashFin account:</p>
-        <p style="font-size: 32px; font-weight: bold; letter-spacing: 8px; margin: 24px 0;">${otp}</p>
-        <p>This code expires in 10 minutes. If you didn't request this, you can safely ignore this email.</p>
-      </div>
-    `,
+  const response = await fetch(BREVO_API_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+      'api-key': process.env.BREVO_API_KEY,
+    },
+    body: JSON.stringify({
+      sender: { name: 'CashFin', email: process.env.EMAIL_USER },
+      to: [{ email: toEmail, name: name || undefined }],
+      subject: 'Verify your CashFin account',
+      htmlContent: `
+        <div style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto; color: #1a1a1a;">
+          <h2 style="margin-bottom: 4px;">Verify your email</h2>
+          <p>Hi ${name || 'there'},</p>
+          <p>Use the code below to verify your email and finish creating your CashFin account:</p>
+          <p style="font-size: 32px; font-weight: bold; letter-spacing: 8px; margin: 24px 0;">${otp}</p>
+          <p>This code expires in 10 minutes. If you didn't request this, you can safely ignore this email.</p>
+        </div>
+      `,
+    }),
   });
+
+  if (!response.ok) {
+    const errorBody = await response.text();
+    throw new Error(`Brevo API error (${response.status}): ${errorBody}`);
+  }
 };
 
 module.exports = sendOtpEmail;
